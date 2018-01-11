@@ -195,6 +195,12 @@ class QueryParser {
             FromClauseItem item = fromClause[i];
             if (!item.fetch)
                 continue;
+
+            if (item.entity.metadata is null) {
+                import std.stdio : writeln;
+                writeln ("ERR: ", item.entity.name, " - ", item.entity.tableName, "(NULL metadata)");
+                }
+
             int count = item.entity.metadata.getFieldCount(item.entity, false);
             if (count > 0) {
                 item.startColumn = startColumn;
