@@ -31,9 +31,20 @@ hibernated_src = [
 
 src_dir = include_directories('source/')
 
+# determine the right version flag for the compiler we use
+dc = meson.get_compiler('d')
+dc_version_prefix = '-fversion='
+if dc.get_id() == 'llvm'
+    dc_version_prefix = '-d-version='
+elif dc.get_id() == 'dmd'
+    dc_version_prefix = '-version='
+endif
+
 #
 # Targets
 #
+
+pg_module_versions = ['USE_PGSQL', 'Derelict_Static']
 hibernated_pg_lib = library('hibernated-pgsql',
         [hibernated_src],
         include_directories: [src_dir],
@@ -41,7 +52,7 @@ hibernated_pg_lib = library('hibernated-pgsql',
         install: true,
         version: meson.project_version(),
         soversion: project_soversion,
-        d_module_versions: ['USE_PGSQL', 'Derelict_Static']
+        d_module_versions: pg_module_versions
 )
 pkgc.generate(name: 'hibernated-pgsql',
               libraries: hibernated_pg_lib,
@@ -49,14 +60,21 @@ pkgc.generate(name: 'hibernated-pgsql',
               version: meson.project_version(),
               requires: ['ddbc-pgsql'],
               description: 'ORM for D language (PostgreSQL library).',
-              d_module_versions: ['USE_PGSQL', 'Derelict_Static']
+              d_module_versions: pg_module_versions
 )
+
+# prepare flags for declare_dependency
+pg_dep_compile_flags = []
+foreach m : pg_module_versions
+    pg_dep_compile_flags += dc_version_prefix + m
+endforeach
 
 # to allow others to easily use this as a subproject
 hibernated_pg_dep = declare_dependency(
     link_with: [hibernated_pg_lib],
     include_directories: [src_dir],
-    dependencies: [ddbc_pg_dep]
+    dependencies: [ddbc_pg_dep],
+    compile_args: pg_dep_compile_flags
 )
 
 #
